@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spintax Article Spinner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --bg-secondary: #111827;
+            --card: #151d2e;
+            --card-hover: #1a2438;
+            --border: #1e2d45;
+            --border-focus: #00e5a0;
+            --fg: #e8edf5;
+            --fg-muted: #7a8ba8;
+            --accent: #00e5a0;
+            --accent-dim: rgba(0, 229, 160, 0.12);
+            --accent-glow: rgba(0, 229, 160, 0.25);
+            --danger: #ff4d6a;
+            --danger-dim: rgba(255, 77, 106, 0.12);
+            --warning: #ffb84d;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* === Background Atmosphere === */
+        .bg-atmosphere {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bg-atmosphere .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            animation: orbFloat 20s ease-in-out infinite;
+        }
+
+        .bg-atmosphere .orb:nth-child(1) {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, var(--accent-glow), transparent 70%);
+            top: -10%; left: -5%;
+            animation-duration: 25s;
+        }
+
+        .bg-atmosphere .orb:nth-child(2) {
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15), transparent 70%);
+            bottom: -15%; right: -10%;
+            animation-duration: 30s;
+            animation-delay: -8s;
+        }
+
+        .bg-atmosphere .orb:nth-child(3) {
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(0, 229, 160, 0.08), transparent 70%);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            animation-duration: 22s;
+            animation-delay: -4s;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(40px, -30px) scale(1.05); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(30px, 40px) scale(1.02); }
+        }
+
+        /* === Grid Pattern Overlay === */
+        .grid-pattern {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(30, 45, 69, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 45, 69, 0.3) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 20%, transparent 70%);
+        }
+
+        /* === Layout === */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 24px 16px 60px;
+        }
+
+        /* === Header === */
+        header {
+            text-align: center;
+            padding: 48px 0 36px;
+        }
+
+        .logo-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px; height: 64px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(0, 229, 160, 0.2);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            font-size: 28px;
+            color: var(--accent);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+            50% { box-shadow: 0 0 30px 5px var(--accent-glow); }
+        }
+
+        header h1 {
+            font-size: clamp(28px, 5vw, 42px);
+            font-weight: 700;
+            letter-spacing: -1px;
+            line-height: 1.15;
+            margin-bottom: 10px;
+        }
+
+        header h1 span {
+            color: var(--accent);
+        }
+
+        header p {
+            color: var(--fg-muted);
+            font-size: 16px;
+            font-weight: 300;
+            max-width: 520px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* === Cards === */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            border-color: rgba(0, 229, 160, 0.15);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--fg-muted);
+            margin-bottom: 18px;
+        }
+
+        .card-title i {
+            color: var(--accent);
+            font-size: 16px;
+        }
+
+        /* === Textarea === */
+        .spintax-input {
+            width: 100%;
+            min-height: 260px;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 18px;
+            color: var(--fg);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13.5px;
+            line-height: 1.7;
+            resize: vertical;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            outline: none;
+        }
+
+        .spintax-input::placeholder {
+            color: var(--fg-muted);
+            opacity: 0.5;
+        }
+
+        .spintax-input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-dim), 0 0 20px -5px var(--accent-glow);
+        }
+
+        /* === Number Input === */
+        .count-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .count-field {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .count-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--fg-muted);
+            margin-bottom: 8px;
+        }
+
+        .count-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--fg);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            -moz-appearance: textfield;
+        }
+
+        .count-input::-webkit-outer-spin-button,
+        .count-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
+        .count-input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        /* === Filename Input === */
+        .filename-field {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .filename-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--fg-muted);
+            margin-bottom: 8px;
+        }
+
+        .filename-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--fg);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .filename-input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        /* === Buttons === */
+        .btn-generate {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #00e5a0, #00c9a7);
+            color: #0a0e17;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.3s, opacity 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-generate::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .btn-generate:hover::before {
+            transform: translateX(100%);
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px -5px var(--accent-glow), 0 0 40px -10px var(--accent);
+        }
+
+        .btn-generate:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-generate:disabled::before {
+            display: none;
+        }
+
+        /* === Stats Bar === */
+        .stats-bar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+
+        .stat-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--accent-dim);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--accent);
+        }
+
+        .stat-chip.warn {
+            background: var(--danger-dim);
+            color: var(--danger);
+        }
+
+        /* === Preview Section === */
+        .preview-section {
+            margin-top: 24px;
+        }
+
+        .preview-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--fg-muted);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .preview-toggle:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .preview-toggle i {
+            transition: transform 0.3s;
+        }
+
+        .preview-toggle.open i {
+            transform: rotate(180deg);
+        }
+
+        .preview-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease, opacity 0.3s;
+            opacity: 0;
+        }
+
+        .preview-list.open {
+            max-height: 2000px;
+            opacity: 1;
+            margin-top: 16px;
+        }
+
+        .preview-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            line-height: 1.6;
+            color: var(--fg);
+            max-height: 180px;
+            overflow-y: auto;
+            word-break: break-word;
+        }
+
+        .preview-item-label {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        /* === Toast === */
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--fg);
+            pointer-events: auto;
+            animation: toastIn 0.4s ease forwards;
+            max-width: 400px;
+        }
+
+        .toast.success { border-left: 3px solid var(--accent); }
+        .toast.error { border-left: 3px solid var(--danger); }
+        .toast.info { border-left: 3px solid var(--warning); }
+
+        .toast i.fa-circle-check { color: var(--accent); }
+        .toast i.fa-circle-xmark { color: var(--danger); }
+        .toast i.fa-circle-info { color: var(--warning); }
+
+        .toast.removing {
+            animation: toastOut 0.3s ease forwards;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(40px) scale(0.95); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateX(0) scale(1); }
+            to { opacity: 0; transform: translateX(40px) scale(0.9); }
+        }
+
+        /* === Spintax Help === */
+        .help-section {
+            margin-top: 8px;
+        }
+
+        .help-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            color: var(--fg-muted);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .help-toggle:hover {
+            color: var(--accent);
+        }
+
+        .help-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.3s;
+            opacity: 0;
+        }
+
+        .help-content.open {
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 10px;
+        }
+
+        .help-content-inner {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            font-size: 13px;
+            line-height: 1.8;
+            color: var(--fg-muted);
+        }
+
+        .help-content-inner code {
+            background: var(--accent-dim);
+            color: var(--accent);
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        /* === Loading Spinner === */
+        .spinner-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            background: rgba(10, 14, 23, 0.7);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .spinner-overlay.active {
+            display: flex;
+        }
+
+        .spinner-ring {
+            width: 56px; height: 56px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spinRing 0.8s linear infinite;
+        }
+
+        @keyframes spinRing {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--fg-muted);
+        }
+
+        .spinner-progress {
+            font-size: 13px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* === Scrollbar === */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
+
+        /* === Responsive === */
+        @media (max-width: 640px) {
+            .app-container { padding: 16px 12px 40px; }
+            header { padding: 32px 0 24px; }
+            .card { padding: 20px; }
+            .spintax-input { min-height: 200px; font-size: 12px; padding: 14px; }
+            .count-row { flex-direction: column; gap: 12px; }
+            .toast-container { top: 12px; right: 12px; left: 12px; }
+            .toast { max-width: 100%; }
+        }
+
+        /* === Reduced Motion === */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Atmosphere -->
+    <div class="bg-atmosphere">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+    <div class="grid-pattern"></div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner-ring"></div>
+        <div class="spinner-text">Memproks artikel...</div>
+        <div class="spinner-progress" id="spinnerProgress"></div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container">
+
+        <header>
+            <div class="logo-icon"><i class="fas fa-rotate"></i></div>
+            <h1>Bulk <span>Article Spinner</span></h1>
+            <p>Masukkan artikel berformat spintax, tentukan jumlah variant, dan langsung download hasilnya sebagai file Excel.</p>
+        </header>
+
+        <!-- Input Card -->
+        <section class="card" id="inputCard">
+            <div class="card-title">
+                <i class="fas fa-code"></i>
+                Input Spintax
+            </div>
+            <textarea
+                class="spintax-input"
+                id="spintaxInput"
+                placeholder="Masukkan artikel dengan format spintax di sini...&#10;&#10;Contoh:&#10;<h1>{Cara Mudah|Tips Cepat|Panduan Lengkap} Belajar {Python|JavaScript|Programming}</h1>&#10;<p>{Hari ini|Kini|Saat ini} {banyak|semakin banyak} orang yang {tertarik|ingin} belajar coding.</p>"
+                spellcheck="false"
+            ></textarea>
+
+            <!-- Help -->
+            <div class="help-section">
+                <button class="help-toggle" id="helpToggle" type="button">
+                    <i class="fas fa-circle-question"></i>
+                    Format Spintax &darr;
+                </button>
+                <div class="help-content" id="helpContent">
+                    <div class="help-content-inner">
+                        <strong>Format dasar:</strong> Gunakan <code>{opsi1|opsi2|opsi3}</code> untuk variasi teks.<br><br>
+                        <strong>Contoh sederhana:</strong><br>
+                        <code>{Saya|Aku} {suka|cinta} {kucing|karnivora}</code><br><br>
+                        <strong>Nested (bertingkat):</strong><br>
+                        <code>{Belajar {Python|JS}|Main {Gitar|Piano}}</code><br><br>
+                        <strong>HTML diperbolehkan:</strong><br>
+                        <code>&lt;h2&gt;{Judul A|Judul B}&lt;/h2&gt;</code><br>
+                        <code>&lt;p&gt;{Paragraf 1|Paragraf 2}&lt;/p&gt;</code><br><br>
+                        Parser mendukung nested spintax tanpa batas kedalaman.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Card -->
+        <section class="card">
+            <div class="card-title">
+                <i class="fas fa-sliders"></i>
+                Pengaturan
+            </div>
+            <div class="count-row">
+                <div class="count-field">
+                    <label for="articleCount">Jumlah Artikel Variant</label>
+                    <input
+                        type="number"
+                        class="count-input"
+                        id="articleCount"
+                        value="10"
+                        min="1"
+                        max="10000"
+                        placeholder="10"
+                    >
+                </div>
+                <div class="filename-field">
+                    <label for="filenameInput">Nama File Excel</label>
+                    <input
+                        type="text"
+                        class="filename-input"
+                        id="filenameInput"
+                        value="spun-articles"
+                        placeholder="spun-articles"
+                    >
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn-generate" id="btnGenerate" type="button">
+                    <i class="fas fa-bolt"></i>
+                    Generate & Download Excel
+                </button>
+            </div>
+<div style="text-align:center; color:#fff; font-size:12px; padding:12px 0;">
+    <a href="https://seopulsecms.web.id" target="_blank" rel="noopener noreferrer" style="color:#fff; text-decoration:none;">
+        Made with ❤ by GardaMedia
+    </a>
+</div>
+            <div class="stats-bar" id="statsBar"></div>
+        </section>
+
+        <!-- Preview Card -->
+        <section class="card preview-section" id="previewCard" style="display:none;">
+            <div class="card-title">
+                <i class="fas fa-eye"></i>
+                Preview Hasil
+            </div>
+            <button class="preview-toggle" id="previewToggle" type="button">
+                <i class="fas fa-chevron-down"></i>
+                Tampilkan Preview
+            </button>
+            <div class="preview-list" id="previewList"></div>
+        </section>
+
+    </div>
+
+    <script>
+        // =============================================
+        // SPINTAX PARSER & SPINNER
+        // =============================================
+
+        /**
+         * Mem-parse spintax dan menghasilkan satu variant acak.
+         * Mendukung nested spintax tanpa batas kedalaman.
+         * @param {string} text - Teks berformat spintax
+         * @returns {string} - Teks yang sudah di-spin
+         */
+        function spinText(text) {
+            // Regex untuk menemukan innermost spintax {a|b|c}
+            // Yang penting: mencari {} yang tidak mengandung {} di dalamnya
+            const pattern = /\{([^{}]+)\}/;
+
+            let result = text;
+            let maxIterations = 10000; // safety limit
+            let iterations = 0;
+
+            while (pattern.test(result) && iterations < maxIterations) {
+                result = result.replace(pattern, (match, content) => {
+                    const options = content.split('|');
+                    const randomIndex = Math.floor(Math.random() * options.length);
+                    return options[randomIndex];
+                });
+                iterations++;
+            }
+
+            return result;
+        }
+
+        /**
+         * Menghitung jumlah kemungkinan variant unik dari spintax
+         * @param {string} text - Teks berformat spintax
+         * @returns {number} - Jumlah kombinasi maksimal
+         */
+        function countCombinations(text) {
+            const pattern = /\{([^{}]+)\}/g;
+            let total = 1;
+            let match;
+
+            // Hitung dari innermost dulu
+            let processed = text;
+            let iterations = 0;
+
+            while (pattern.test(processed) && iterations < 5000) {
+                processed = processed.replace(/\{([^{}]+)\}/g, (m, content) => {
+                    const options = content.split('|');
+                    total *= options.length;
+                    return '__SPUN__';
+                });
+                iterations++;
+            }
+
+            return total;
+        }
+
+        /**
+         * Menghitung jumlah spin block dalam teks
+         * @param {string} text
+         * @returns {number}
+         */
+        function countSpinBlocks(text) {
+            const matches = text.match(/\{[^{}]+\}/g);
+            return matches ? matches.length : 0;
+        }
+
+        /**
+         * Generate banyak variant unik dari spintax
+         * @param {string} spintax - Input spintax
+         * @param {number} count - Jumlah variant yang diminta
+         * @returns {string[]} - Array artikel unik
+         */
+        function generateVariants(spintax, count) {
+            const uniqueArticles = new Set();
+            const results = [];
+            let attempts = 0;
+            const maxAttempts = count * 100; // Batas percobaan
+
+            while (results.length < count && attempts < maxAttempts) {
+                const spun = spinText(spintax);
+
+                if (!uniqueArticles.has(spun)) {
+                    uniqueArticles.add(spun);
+                    results.push(spun);
+                }
+
+                attempts++;
+            }
+
+            return results;
+        }
+
+        // =============================================
+        // EXCEL EXPORT
+        // =============================================
+
+        /**
+         * Membuat dan mendownload file Excel dari array artikel
+         * @param {string[]} articles - Array hasil spin
+         * @param {string} filename - Nama file tanpa ekstensi
+         */
+        function downloadExcel(articles, filename) {
+            // Siapkan data untuk sheet
+            const data = [['No', 'Artikel']];
+
+            articles.forEach((article, index) => {
+                data.push([index + 1, article]);
+            });
+
+            // Buat workbook dan worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+
+            // Set lebar kolom
+            ws['!cols'] = [
+                { wch: 6 },   // Kolom No
+                { wch: 100 }  // Kolom Artikel
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Spun Articles');
+
+            // Download file
+            XLSX.writeFile(wb, `${filename}.xlsx`);
+        }
+
+        // =============================================
+        // TOAST NOTIFICATION
+        // =============================================
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const iconMap = {
+                success: 'fa-circle-check',
+                error: 'fa-circle-xmark',
+                info: 'fa-circle-info'
+            };
+
+            toast.innerHTML = `<i class="fas ${iconMap[type] || iconMap.info}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('removing');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // =============================================
+        // UI CONTROLLERS
+        // =============================================
+
+        const spintaxInput = document.getElementById('spintaxInput');
+        const articleCountInput = document.getElementById('articleCount');
+        const filenameInput = document.getElementById('filenameInput');
+        const btnGenerate = document.getElementById('btnGenerate');
+        const statsBar = document.getElementById('statsBar');
+        const previewCard = document.getElementById('previewCard');
+        const previewToggle = document.getElementById('previewToggle');
+        const previewList = document.getElementById('previewList');
+        const helpToggle = document.getElementById('helpToggle');
+        const helpContent = document.getElementById('helpContent');
+        const spinnerOverlay = document.getElementById('spinnerOverlay');
+        const spinnerProgress = document.getElementById('spinnerProgress');
+
+        let lastResults = [];
+
+        // Toggle help
+        helpToggle.addEventListener('click', () => {
+            helpContent.classList.toggle('open');
+        });
+
+        // Toggle preview
+        previewToggle.addEventListener('click', () => {
+            previewList.classList.toggle('open');
+            previewToggle.classList.toggle('open');
+            const isOpen = previewList.classList.contains('open');
+            previewToggle.innerHTML = `<i class="fas fa-chevron-down"></i> ${isOpen ? 'Sembunyikan Preview' : 'Tampilkan Preview'}`;
+        });
+
+        // Live stats update
+        spintaxInput.addEventListener('input', updateLiveStats);
+
+        function updateLiveStats() {
+            const text = spintaxInput.value.trim();
+            statsBar.innerHTML = '';
+
+            if (!text) return;
+
+            const blocks = countSpinBlocks(text);
+            if (blocks > 0) {
+                const combinations = countCombinations(text);
+                const chip = document.createElement('span');
+                chip.className = 'stat-chip';
+                chip.innerHTML = `<i class="fas fa-shuffle"></i> ${blocks} spin block &mdash; max ${formatNumber(combinations)} kombinasi`;
+                statsBar.appendChild(chip);
+            }
+        }
+
+        function formatNumber(n) {
+            if (n >= 1e9) return (n / 1e9).toFixed(1) + 'M';
+            if (n >= 1e6) return (n / 1e6).toFixed(1) + 'Jt';
+            if (n >= 1e3) return (n / 1e3).toFixed(1) + 'Rb';
+            return n.toLocaleString('id-ID');
+        }
+
+        // =============================================
+        // MAIN GENERATE HANDLER
+        // =============================================
+
+        btnGenerate.addEventListener('click', async () => {
+            const spintax = spintaxInput.value.trim();
+            const count = parseInt(articleCountInput.value, 10);
+            const filename = filenameInput.value.trim() || 'spun-articles';
+
+            // Validasi input
+            if (!spintax) {
+                showToast('Masukkan artikel berformat spintax terlebih dahulu.', 'error');
+                spintaxInput.focus();
+                return;
+            }
+
+            if (!count || count < 1) {
+                showToast('Jumlah artikel harus minimal 1.', 'error');
+                articleCountInput.focus();
+                return;
+            }
+
+            if (count > 10000) {
+                showToast('Maksimal 10.000 artikel per generate.', 'error');
+                articleCountInput.focus();
+                return;
+            }
+
+            // Cek apakah ada spintax block
+            if (!/\{[^{}]+\}/.test(spintax)) {
+                showToast('Tidak ditemukan format spintax {opsi1|opsi2}. Teks akan di-copy langsung.', 'info');
+            }
+
+            // Disable button & show loading
+            btnGenerate.disabled = true;
+            spinnerOverlay.classList.add('active');
+            spinnerProgress.textContent = '';
+
+            // Gunakan setTimeout agar UI sempat render
+            await new Promise(r => setTimeout(r, 100));
+
+            try {
+                const startTime = performance.now();
+
+                // Generate variants
+                const articles = generateVariants(spintax, count);
+                lastResults = articles;
+
+                const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+
+                // Update progress
+                spinnerProgress.textContent = `${articles.length} artikel di-generate dalam ${elapsed}s`;
+
+                // Small delay for UX
+                await new Promise(r => setTimeout(r, 300));
+
+                // Download Excel
+                downloadExcel(articles, filename);
+
+                // Show success
+                const duplicateCount = count - articles.length;
+                let successMsg = `${articles.length} artikel berhasil di-generate & didownload!`;
+                if (duplicateCount > 0) {
+                    successMsg += ` (${duplicateCount} duplikat dilewati)`;
+                }
+                showToast(successMsg, 'success');
+
+                // Update stats
+                statsBar.innerHTML = '';
+                const blocks = countSpinBlocks(spintax);
+                if (blocks > 0) {
+                    const combinations = countCombinations(spintax);
+                    const chip1 = document.createElement('span');
+                    chip1.className = 'stat-chip';
+                    chip1.innerHTML = `<i class="fas fa-shuffle"></i> ${blocks} spin block`;
+                    statsBar.appendChild(chip1);
+
+                    const chip2 = document.createElement('span');
+                    chip2.className = 'stat-chip';
+                    chip2.innerHTML = `<i class="fas fa-calculator"></i> max ${formatNumber(combinations)} kombinasi`;
+                    statsBar.appendChild(chip2);
+                }
+
+                const chip3 = document.createElement('span');
+                chip3.className = 'stat-chip';
+                chip3.innerHTML = `<i class="fas fa-check"></i> ${articles.length} unik di-generate`;
+                statsBar.appendChild(chip3);
+
+                if (duplicateCount > 0) {
+                    const chip4 = document.createElement('span');
+                    chip4.className = 'stat-chip warn';
+                    chip4.innerHTML = `<i class="fas fa-triangle-exclamation"></i> ${duplicateCount} duplikat dilewati`;
+                    statsBar.appendChild(chip4);
+                }
+
+                // Show preview
+                showPreview(articles);
+
+            } catch (err) {
+                showToast('Terjadi kesalahan: ' + err.message, 'error');
+                console.error(err);
+            } finally {
+                btnGenerate.disabled = false;
+                spinnerOverlay.classList.remove('active');
+            }
+        });
+
+        // =============================================
+        // PREVIEW RENDER
+        // =============================================
+
+        function showPreview(articles) {
+            previewCard.style.display = '';
+            previewList.innerHTML = '';
+
+            // Tampilkan maksimal 5 preview pertama
+            const previewCount = Math.min(5, articles.length);
+
+            for (let i = 0; i < previewCount; i++) {
+                const item = document.createElement('div');
+                item.className = 'preview-item';
+
+                const label = document.createElement('div');
+                label.className = 'preview-item-label';
+                label.textContent = `Artikel #${i + 1}`;
+                item.appendChild(label);
+
+                const content = document.createElement('div');
+                // Render HTML tapi escape untuk display aman
+                content.textContent = articles[i];
+                item.appendChild(content);
+
+                previewList.appendChild(item);
+            }
+
+            if (articles.length > 5) {
+                const more = document.createElement('div');
+                more.style.cssText = 'font-size:12px; color:var(--fg-muted); padding:8px 0; text-align:center;';
+                more.textContent = `+ ${articles.length - 5} artikel lainnya (lihat di file Excel)`;
+                previewList.appendChild(more);
+            }
+        }
+
+        // =============================================
+        // CONTOH SPINTAX (klik ganda pada textarea)
+        // =============================================
+
+        spintaxInput.addEventListener('dblclick', () => {
+            if (spintaxInput.value.trim()) return; // Jangan overwrite jika sudah ada
+
+            const example = `<h1>{Cara Mudah|Tips Cepat|Panduan Lengkap|Strategi Efektif} Belajar {Programming|Coding|Pemrograman} untuk {Pemula|Newbie|Beginner}</h1>
+
+<p>{Di era digital saat ini|Zaman sekarang ini|Di periode teknologi modern ini}, {kemampuan|skill|keterampilan} {pemrograman|coding|programming} {menjadi|merupakan|adalah} {satu di antara|salah satu} {kompetensi|keahlian|skill} yang {paling banyak dicari|sangat dibutuhkan|paling diminati} di {dunia|pasar} {kerja|industri|profesi}.</p>
+
+<h2>{Mengapa|Kenapa|Alasan} {Belajar|Mempelajari|Menekuni} Coding?</h2>
+
+<p>{Banyak|Sejumlah|Ada banyak} {keuntungan|manfaat|kebaikan} yang {bisa|dapat|akan} {kamu|anda|kita} {dapatkan|peroleh|raih} dari {belajar|mempelajari} {pemrograman|coding}. {Pertama|Pertama-tama|Nomor satu}, {cara berpikir|pola pikir|mindset} {lebih|semakin} {logis|terstruktur|runtut}. {Kedua|Nomor dua|Selanjutnya}, {peluang|opportunitas|kesempatan} {karir|karier|profesi} yang {sangat|amat} {luas|banyak|beragam}.</p>
+
+<p>{Selain itu|Di samping itu|Tambahan lagi}, {gaji|penghasilan|income} {programmer|developer|pengembang} {termasuk|merupakan} yang {paling tinggi|tertinggi|paling kompetitif} di {berbagai|ragam|aneka} {industri|sektor|bidang} {teknologi|digital|IT}.</p>`;
+
+            spintaxInput.value = example;
+            updateLiveStats();
+            showToast('Contoh spintax dimuat! Double-click untuk memuat ulang.', 'info');
+        });
+
+        // =============================================
+        // KEYBOARD SHORTCUT
+        // =============================================
+
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+Enter untuk generate
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                btnGenerate.click();
+            }
+        });
+
+        // Initial stats
+        updateLiveStats();
+    </script>
+</body>
+</html>
